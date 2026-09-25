@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SDPC-HCN | Hospital Central de Nampula</title>
+<style>
+:root{--green:#087443;--dark:#173b2b;--border:#333;--bg:#eef1ef;--gold:#c9a227;--hcn-red:#d32f2f;--hcn-blue:#1565c0;--sra-orange:#e65100;--neon:#00ffff;--neon2:#00ff88;--public-blue:#2196f3;--public-green:#4caf50}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);font:13px Arial,sans-serif;color:#111;overflow-x:hidden}
+#portal-screen{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#0a0e27 0%,#1a1f3a 50%,#0a0e27 100%);z-index:999999;display:flex;align-items:center;justify-content:center;overflow-y:auto;padding:20px}
+#portal-screen.hidden{display:none}
+.portal-bg-grid{position:fixed;top:0;left:0;width:100%;height:100%;background-image:linear-gradient(rgba(0,255,255,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,255,0.05) 1px,transparent 1px);background-size:60px 60px;animation:gridMove 25s linear infinite;pointer-events:none}
+@keyframes gridMove{0%{transform:translate(0,0)}100%{transform:translate(60px,60px)}}
+.portal-glow{position:fixed;top:50%;left:50%;width:900px;height:900px;transform:translate(-50%,-50%);background:radial-gradient(circle,rgba(0,255,255,0.15) 0%,transparent 70%);animation:portalPulse 4s ease-in-out infinite;pointer-events:none}
+@keyframes portalPulse{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:0.6}50%{transform:translate(-50%,-50%) scale(1.3);opacity:1}}
+.portal-content{position:relative;z-index:10;text-align:center;width:100%;max-width:1200px;animation:portalFadeIn 1s ease-out}
+@keyframes portalFadeIn{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+.portal-logo{font-size:clamp(48px,8vw,96px);font-weight:900;background:linear-gradient(135deg,var(--neon),var(--neon2),#0088ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:6px;margin-bottom:10px}
+.portal-subtitle{font-size:clamp(12px,2vw,18px);color:var(--neon);letter-spacing:clamp(4px,1vw,10px);text-transform:uppercase;opacity:0.9;margin-bottom:8px}
+.portal-hospital{font-size:clamp(14px,2.5vw,22px);color:#fff;font-weight:300;margin-bottom:50px;letter-spacing:2px}
+.portal-entries{display:grid;grid-template-columns:repeat(auto-fit,minmax(350px,1fr));gap:30px;margin:40px 0}
+.portal-entry{background:rgba(255,255,255,0.05);border:3px solid;border-radius:20px;padding:35px 25px;cursor:pointer;transition:all 0.3s;position:relative;overflow:hidden}
+.portal-entry:nth-child(1){border-color:var(--public-blue)}
+.portal-entry:nth-child(2){border-color:var(--green)}
+.portal-entry:hover{transform:translateY(-8px) scale(1.03);box-shadow:0 0 40px rgba(255,255,255,0.2)}
+.portal-entry .entry-icon{font-size:70px;margin-bottom:15px;display:block}
+.portal-entry .entry-title{font-size:26px;font-weight:900;margin-bottom:10px;letter-spacing:2px}
+.portal-entry:nth-child(1) .entry-title{color:var(--public-blue)}
+.portal-entry:nth-child(2) .entry-title{color:var(--green)}
+.portal-entry .entry-desc{font-size:15px;color:#fff;line-height:1.5;margin-bottom:20px}
+.portal-entry .entry-btn{display:inline-block;padding:12px 35px;border-radius:30px;font-size:15px;font-weight:bold;text-transform:uppercase}
+.portal-entry:nth-child(1) .entry-btn{background:var(--public-blue);color:#fff}
+.portal-entry:nth-child(2) .entry-btn{background:var(--green);color:#fff}
+.portal-footer{margin-top:40px;color:rgba(255,255,255,0.6);font-size:13px}
+#public-appointment{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#1976d2 0%,#0d47a1 100%);z-index:999998;display:none;align-items:center;justify-content:center;padding:20px;overflow-y:auto}
+#public-appointment.active{display:flex}
+.appointment-container{background:#fff;border-radius:15px;box-shadow:0 20px 60px rgba(0,0,0,0.3);max-width:600px;width:100%;padding:35px 25px;position:relative;border-top:5px solid var(--public-blue)}
+.appointment-back{position:absolute;top:15px;left:15px;background:rgba(0,0,0,0.1);border:none;color:var(--public-blue);padding:6px 12px;border-radius:20px;cursor:pointer;font-size:12px}
+.appointment-title{text-align:center;color:var(--public-blue);font-size:22px;font-weight:900;margin-bottom:8px}
+.appointment-subtitle{text-align:center;color:#666;font-size:13px;margin-bottom:20px}
+.appointment-form{display:flex;flex-direction:column;gap:12px}
+.appointment-field label{display:block;font-size:12px;font-weight:bold;color:#444;margin-bottom:4px}
+.appointment-field input,.appointment-field select,.appointment-field textarea{width:100%;padding:10px;border:2px solid #ddd;border-radius:6px;font:inherit;font-size:13px}
+.appointment-field textarea{min-height:70px;resize:vertical}
+.appointment-submit{background:linear-gradient(135deg,var(--public-blue),#0d47a1);color:#fff;border:none;padding:12px;border-radius:6px;font-size:15px;font-weight:bold;cursor:pointer;margin-top:5px}
+.appointment-success{display:none;text-align:center;padding:25px}
+.appointment-success.show{display:block}
+.appointment-success .success-icon{font-size:70px;color:var(--public-green);margin-bottom:15px}
+.appointment-success .appointment-number{background:#f0f8f4;padding:12px;border-radius:8px;font-size:16px;font-weight:bold;color:var(--green);margin:15px 0}
+#dept-screen{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#0a0e27 0%,#1a1f3a 50%,#0a0e27 100%);z-index:999997;display:none;align-items:center;justify-content:center;overflow-y:auto;padding:20px}
+#dept-screen.active{display:flex}
+.dept-content{position:relative;z-index:10;text-align:center;width:100%;max-width:1200px}
+.dept-back{position:absolute;top:20px;left:20px;background:rgba(255,255,255,0.1);border:1px solid rgba(0,255,255,0.3);color:var(--neon);padding:8px 16px;border-radius:20px;cursor:pointer;font-size:13px}
+.dept-logo{font-size:clamp(40px,7vw,80px);font-weight:900;background:linear-gradient(135deg,var(--neon),var(--neon2),#0088ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:5px}
+.dept-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:15px;margin:25px 0}
+.dept-card{background:rgba(0,255,255,0.08);border:2px solid var(--neon);border-radius:12px;padding:20px 15px;cursor:pointer;transition:all 0.3s}
+.dept-card:hover{background:rgba(0,255,255,0.2);transform:translateY(-6px) scale(1.04);border-color:#fff}
+.dept-card .dept-icon{font-size:40px;margin-bottom:8px;display:block}
+.dept-card .dept-code{font-size:22px;font-weight:900;color:var(--neon);margin-bottom:4px}
+.dept-card .dept-name{font-size:12px;color:#fff;line-height:1.2}
+#auth-screen{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,var(--dark) 0%,var(--green) 50%,#0a5c35 100%);z-index:999996;display:none;align-items:center;justify-content:center;padding:20px}
+#auth-screen.active{display:flex}
+.auth-container{background:#fff;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.3);max-width:420px;width:100%;padding:30px 25px;position:relative;border-top:5px solid var(--gold)}
+.auth-dept-badge{background:linear-gradient(135deg,var(--neon),#0088ff);color:#fff;padding:6px 14px;border-radius:20px;font-size:11px;font-weight:bold;display:inline-block;margin-bottom:12px}
+.auth-title{text-align:center;margin:8px 0 4px;color:var(--green);font-size:20px;font-weight:bold}
+.auth-subtitle{text-align:center;color:#666;font-size:12px;margin-bottom:16px}
+.auth-form{display:flex;flex-direction:column;gap:10px}
+.auth-field label{display:block;font-size:11px;font-weight:bold;color:#444;margin-bottom:3px}
+.auth-field input,.auth-field select{width:100%;padding:9px 10px;border:2px solid #ddd;border-radius:6px;font:inherit;font-size:13px}
+.auth-btn{background:linear-gradient(135deg,var(--green),var(--dark));color:#fff;border:none;padding:11px;border-radius:6px;font-size:14px;font-weight:bold;cursor:pointer}
+.auth-divider{text-align:center;color:#999;font-size:11px;margin:8px 0;position:relative}
+.auth-divider::before,.auth-divider::after{content:'';position:absolute;top:50%;width:38%;height:1px;background:#ddd}
+.auth-divider::before{left:0}.auth-divider::after{right:0}
+.auth-switch{text-align:center;font-size:12px;color:#555;margin-top:8px}
+.auth-switch a{color:var(--green);font-weight:bold;cursor:pointer}
+.auth-error{background:#ffebee;color:#c62828;padding:8px;border-radius:6px;font-size:12px;display:none;margin-bottom:8px}
+.auth-error.show{display:block}
+.auth-info{background:#e8f5e9;color:var(--green);padding:8px;border-radius:6px;font-size:11px;margin-top:8px}
+.auth-hidden{display:none!important}
+.auth-back{position:absolute;top:12px;left:12px;background:rgba(0,0,0,0.1);border:none;color:var(--green);padding:6px 10px;border-radius:20px;cursor:pointer;font-size:11px}
+.gov-bar{background:linear-gradient(90deg,var(--dark) 0%,var(--green) 100%);color:#fff;padding:8px 15px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;border-bottom:3px solid var(--gold)}
+.user-badge{background:#f0f8f4;padding:4px 10px;border-radius:20px;font-size:11px;color:var(--dark);display:flex;align-items:center;gap:6px;border:1px solid #a5d6a7}
+.user-badge .user-role{background:var(--green);color:#fff;padding:2px 6px;border-radius:10px;font-size:9px;font-weight:bold}
+.user-badge .user-role.admin{background:var(--gold);color:var(--dark)}
+.user-badge .user-dept{background:var(--hcn-blue);color:#fff;padding:2px 6px;border-radius:10px;font-size:9px;font-weight:bold}
+.toolbar{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid #bbb;padding:8px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+button{border:0;border-radius:4px;padding:8px 12px;background:var(--green);color:#fff;font-weight:bold;cursor:pointer;font-size:12px}
+button.secondary{background:#555}
+button.save-btn{background:#2563eb}
+button.search-btn{background:#d97706}
+button.home-btn{background:#7c3aed}
+button.logout-btn{background:var(--hcn-red)}
+button.users-btn{background:#6a1b9a}
+button.report-btn{background:#00838f}
+button.sra-btn{background:var(--sra-orange)}
+.tabs{display:flex;gap:4px;justify-content:center;margin:10px auto;max-width:1100px;flex-wrap:wrap}
+.tabs button{background:#777;font-size:11px;padding:6px 10px}.tabs button.active{background:var(--green)}
+.page{display:none;max-width:1100px;margin:0 auto 25px;background:#fff;padding:20px;box-shadow:0 2px 10px #0002}.page.active{display:block}
+.header{text-align:center;border-bottom:2px solid #222;padding-bottom:8px}.header h1{font-size:17px}.header h2{font-size:15px}.header h3{font-size:13px}
+.section{margin-top:12px;border:1px solid var(--border);padding:8px}.section-title{background:#eee;border:1px solid var(--border);padding:5px;text-align:center;font-weight:bold;text-transform:uppercase;margin:-8px -8px 8px}
+.grid{display:grid;gap:6px;margin-top:6px}.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}.g5{grid-template-columns:repeat(5,1fr)}
+label.field{display:block;font-weight:bold;font-size:12px}.field input,.field select,.field textarea,input[type=text],textarea{width:100%;margin-top:2px;border:1px solid #555;border-radius:2px;padding:6px;font:inherit;font-size:12px}
+textarea{min-height:60px;resize:vertical}
+.checkgrid{display:grid;grid-template-columns:1fr 1fr;gap:5px 15px}.check{display:flex;gap:6px;align-items:flex-start;font-weight:normal;font-size:12px}.check input[type=checkbox],.check input[type=radio]{width:auto;margin-top:2px}
+.qbox{border:1px solid #777;padding:6px;margin-top:6px}.qbox strong{display:block;margin-bottom:4px;font-size:12px}.line{display:grid;grid-template-columns:28px 1fr;gap:4px;margin:4px 0}
+.system{border:1px solid #777;margin-top:6px;padding:6px}.system-head{font-weight:bold;margin-bottom:4px;font-size:12px}.system textarea{min-height:45px}
+.inline-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:4px 0;font-size:12px}
+.ex-block{border:1px solid #888;padding:6px;margin-top:6px;background:#fafafa}
+.ex-block-title{font-weight:bold;background:#e8e8e8;padding:4px 6px;margin:-6px -6px 6px;font-size:12px}
+.diag-table,.oms-table,.report-table,.users-table{width:100%;border-collapse:collapse;margin-top:6px;font-size:12px}
+.diag-table th,.diag-table td,.oms-table th,.oms-table td,.report-table th,.report-table td,.users-table th,.users-table td{border:1px solid #555;padding:5px;text-align:left}
+.diag-table th,.oms-table th{background:#eee}
+.obito-block{border:2px solid #900;background:#fff8f8;padding:8px;margin-top:8px}
+.obito-block .section-title{background:#fdd;color:#900;border-color:#900}
+.image-upload-container{margin-top:8px;padding:8px;background:#fff;border:1px dashed #999;border-radius:4px}
+.image-preview{margin-top:8px;display:flex;flex-wrap:wrap;gap:8px}
+.image-preview-item{position:relative;border:1px solid #ccc;border-radius:4px;overflow:hidden}
+.image-preview-item img{max-width:200px;max-height:200px;display:block;cursor:pointer}
+.image-preview-item .remove-btn{position:absolute;top:2px;right:2px;background:rgba(255,0,0,0.8);color:#fff;border:none;border-radius:50%;width:20px;height:20px;cursor:pointer;font-weight:bold}
+.image-modal,.search-modal,.users-modal,.report-modal{display:none;position:fixed;z-index:1000;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.7)}
+.search-modal-content,.users-modal-content,.report-modal-content{background:#fff;max-width:800px;margin:25px auto;border-radius:8px;overflow:hidden;display:flex;flex-direction:column;max-height:90vh}
+.report-modal-content{max-width:950px}
+.search-modal-header,.users-modal-header,.report-modal-header{background:var(--green);color:#fff;padding:12px 18px;display:flex;justify-content:space-between;align-items:center}
+.report-modal-header{background:var(--hcn-blue)}
+.search-modal-body,.users-modal-body,.report-modal-body{padding:15px;overflow-y:auto;flex:1}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--green);color:#fff;padding:10px 18px;border-radius:5px;box-shadow:0 4px 15px #0003;z-index:2000;opacity:0;transform:translateY(20px);transition:all 0.3s;font-weight:bold}
+.toast.show{opacity:1;transform:translateY(0)}
+.dash-hero{background:linear-gradient(135deg,var(--dark) 0%,var(--green) 100%);color:#fff;padding:20px;border-radius:8px;margin-bottom:15px;border-top:4px solid var(--gold)}
+.dash-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:15px}
+.dash-stat{background:#fff;border-radius:6px;padding:12px;text-align:center;border-left:4px solid var(--green)}
+.dash-stat .stat-num{font-size:24px;font-weight:bold;color:var(--dark)}
+.dash-stat .stat-label{font-size:10px;color:#666;text-transform:uppercase}
+.dash-forms-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px}
+.dash-form-card{background:#fff;border:1px solid #ddd;border-radius:6px;padding:14px;cursor:pointer;transition:all 0.2s}
+.dash-form-card:hover{transform:translateY(-2px);box-shadow:0 4px 10px #0001;border-color:var(--green)}
+.dash-quick-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:15px}
+.dash-action-btn{background:#fff;border:1px solid #ddd;border-radius:6px;padding:10px;text-align:center;cursor:pointer;font-weight:bold}
+.dash-action-btn:hover{background:#f0f8f4;border-color:var(--green)}
+.sra-two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.sra-field{border:1px solid #ccc;border-radius:4px;padding:6px;background:#fafafa}
+.sra-field label{display:block;font-weight:bold;font-size:11px;color:var(--dark);margin-bottom:3px}
+.chart-container{margin-bottom:15px;border:1px solid #999;background:#fff}
+.chart-title{background:#f5f5f5;padding:5px 8px;font-weight:bold;font-size:11px;border-bottom:1px solid #999}
+.chart-grid{display:grid;position:relative}
+.chart-grid.ta-grid{grid-template-columns:50px repeat(24,1fr);grid-template-rows:repeat(9,26px)}
+.chart-grid.pulso-grid{grid-template-columns:50px repeat(24,1fr);grid-template-rows:repeat(8,26px)}
+.chart-grid.temp-grid{grid-template-columns:50px repeat(24,1fr);grid-template-rows:repeat(9,26px)}
+.chart-y-label{display:flex;align-items:center;justify-content:flex-end;padding-right:4px;font-size:9px;font-weight:bold;color:#555;border-right:1px solid #333;background:#fafafa}
+.chart-x-header{display:flex;align-items:flex-start;justify-content:center;font-size:8px;font-weight:bold;border-top:1px solid #333}
+.chart-cell{border:1px solid #eee;position:relative;cursor:pointer}
+.chart-cell:hover{background:#fff9c4}
+.chart-cell.marked-ta{background:#ffcdd2}
+.chart-cell.marked-pulso{background:#bbdefb}
+.chart-cell.marked-temp{background:#c8e6c9}
+.chart-cell .dot{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:8px;height:8px;border-radius:50%;border:1px solid #333}
+.chart-cell .dot.ta{background:#d32f2f}
+.chart-cell .dot.pulso{background:#1565c0}
+.chart-cell .dot.temp{background:#2e7d32}
+.fluid-grid{display:grid;grid-template-columns:90px repeat(24,1fr);grid-template-rows:repeat(6,30px);border:1px solid #333;background:#fff;margin-top:8px}
+.fluid-row-label{display:flex;align-items:center;justify-content:flex-end;padding-right:5px;font-size:9px;font-weight:bold;border-right:1px solid #333;background:#fff3e0}
+.fluid-hour-header{display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:bold;border-bottom:1px solid #333}
+.fluid-cell{border:1px solid #ddd}
+.fluid-cell input{width:100%;height:100%;border:none;padding:1px;font-size:9px;text-align:center;background:transparent}
+.fluid-cell.total-row{background:#e8f5e9}
+.fluid-cell.balance-row{background:#fff8e1}
+@media print{@page{size:A4;margin:9mm}body{background:#fff;font-size:10px}.toolbar,.tabs,.search-modal,.toast,.gov-bar,#home,.users-modal,.report-modal{display:none!important}.page{display:none;padding:0}.page.printable{display:block}}
+@media(max-width:768px){.g2,.g3,.g4,.g5,.checkgrid,.sra-two-col{grid-template-columns:1fr}.tabs{flex-direction:column}}
+</style>
+</head>
+<body>
+
+<!-- 1. PORTAL SCREEN -->
+<div id="portal-screen">
+<div class="portal-bg-grid"></div>
+<div class="portal-glow"></div>
+<div class="portal-content">
+<div class="portal-logo">SDPC-HCN</div>
+<div class="portal-subtitle">Sistema Digital do Processo Clínico</div>
+<div class="portal-hospital">Hospital Central de Nampula</div>
+<div class="portal-entries">
+<div class="portal-entry" onclick="openPublicAppointment()">
+<span class="entry-icon">👥</span>
+<div class="entry-title">PÚBLICO</div>
+<div class="entry-desc">Marcação de consultas para cidadãos</div>
+<div class="entry-btn">Marcar Consulta</div>
+</div>
+<div class="portal-entry" onclick="openDeptSelection()">
+<span class="entry-icon">👨‍⚕️</span>
+<div class="entry-title">PROFISSIONAIS</div>
+<div class="entry-desc">Acesso para profissionais de saúde</div>
+<div class="entry-btn">Entrar no Sistema</div>
+</div>
+</div>
+<div class="portal-footer">República de Moçambique · Ministério da Saúde · SNS</div>
+</div>
+</div>
+
+<!-- 2. MARCAÇÃO DE CONSULTA PÚBLICA -->
+<div id="public-appointment">
+<div class="appointment-container">
+<button class="appointment-back" onclick="backToPortal()">← Voltar</button>
+<div id="appointment-form-container">
+<div class="appointment-title">📅 Marcação de Consulta</div>
+<div class="appointment-subtitle">Preencha os dados para marcar a sua consulta</div>
+<form class="appointment-form" onsubmit="submitAppointment(event)">
+<div class="appointment-field"><label>👤 Nome Completo</label><input type="text" id="apt-nome" required placeholder="Nome completo"></div>
+<div class="appointment-field"><label>📞 Contacto Telefónico</label><input type="tel" id="apt-contacto" required placeholder="Ex: 84 123 4567"></div>
+<div class="appointment-field"><label>🆔 Número do BI</label><input type="text" id="apt-bi" required placeholder="Número do BI"></div>
+<div class="appointment-field"><label>📍 Proveniência</label><select id="apt-proveniencia" required><option value="">Selecione</option><option value="Nampula Cidade">Nampula Cidade</option><option value="Nacala">Nacala</option><option value="Ilha de Moçambique">Ilha de Moçambique</option><option value="Ribáuè">Ribáuè</option><option value="Moma">Moma</option><option value="Outro">Outro</option></select></div>
+<div class="appointment-field"><label>🩺 Motivo da Consulta</label><textarea id="apt-motivo" required placeholder="Descreva o motivo"></textarea></div>
+<button type="submit" class="appointment-submit">Confirmar Marcação</button>
+</form>
+</div>
+<div id="appointment-success" class="appointment-success">
+<div class="success-icon">✅</div>
+<h3>Marcação com Sucesso!</h3>
+<p>A sua consulta foi registada com sucesso.</p>
+<div class="appointment-number" id="appointment-number"></div>
+<button class="appointment-submit" onclick="backToPortal()">Voltar ao Início</button>
+</div>
+</div>
+</div>
+
+<!-- 3. SELEÇÃO DE DEPARTAMENTOS -->
+<div id="dept-screen">
+<div class="dept-bg-grid"></div>
+<button class="dept-back" onclick="backToPortal()">← Voltar ao Portal</button>
+<div class="dept-content">
+<div class="dept-logo">SDPC-HCN</div>
+<div style="color:var(--neon);font-size:16px;margin-bottom:20px;letter-spacing:2px">SELECIONE O SEU DEPARTAMENTO</div>
+<div class="dept-grid">
+<div class="dept-card" onclick="selectDept('BS','Banco de Socorros')"><span class="dept-icon">🚨</span><div class="dept-code">BS</div><div class="dept-name">Banco de Socorros</div></div>
+<div class="dept-card" onclick="selectDept('CE','Consulta Externa')"><span class="dept-icon">🏥</span><div class="dept-code">CE</div><div class="dept-name">Consulta Externa</div></div>
+<div class="dept-card" onclick="selectDept('Ped','Pediatria')"><span class="dept-icon">👶</span><div class="dept-code">Ped</div><div class="dept-name">Pediatria</div></div>
+<div class="dept-card" onclick="selectDept('G.Obs','Ginecologia e Obstetrícia')"><span class="dept-icon">🤰</span><div class="dept-code">G.Obs</div><div class="dept-name">Ginecologia e Obstetrícia</div></div>
+<div class="dept-card" onclick="selectDept('Cir','Cirurgia Geral')"><span class="dept-icon">🔪</span><div class="dept-code">Cir</div><div class="dept-name">Cirurgia Geral</div></div>
+<div class="dept-card" onclick="selectDept('Orto','Ortopedia')"><span class="dept-icon">🦴</span><div class="dept-code">Orto</div><div class="dept-name">Ortopedia</div></div>
+<div class="dept-card" onclick="selectDept('Neuroc','Neurocirurgia')"><span class="dept-icon">🧠</span><div class="dept-code">Neuroc</div><div class="dept-name">Neurocirurgia</div></div>
+<div class="dept-card" onclick="selectDept('Med.I','Medicina Interna')"><span class="dept-icon">🩺</span><div class="dept-code">Med.I</div><div class="dept-name">Medicina Interna</div></div>
+<div class="dept-card" onclick="selectDept('SRA','Reanimação Adulto')"><span class="dept-icon">🚑</span><div class="dept-code">SRA</div><div class="dept-name">Reanimação Adulto</div></div>
+<div class="dept-card" onclick="selectDept('Onco','Oncologia')"><span class="dept-icon">🎗️</span><div class="dept-code">Onco</div><div class="dept-name">Oncologia</div></div>
+</div>
+</div>
+</div>
+
+<!-- 4. LOGIN / REGISTO -->
+<div id="auth-screen">
+<div class="auth-container">
+<button class="auth-back" onclick="backToDept()">← Voltar</button>
+<div class="auth-title">SDPC-HCN</div>
+<div class="auth-subtitle"><span id="auth-dept-display" class="auth-dept-badge">DEPARTAMENTO</span><strong>Hospital Central de Nampula</strong></div>
+<div id="login-form">
+<div class="auth-error" id="login-error"></div>
+<form class="auth-form" onsubmit="handleLogin(event)">
+<div class="auth-field"><label>👤 Username</label><input type="text" id="login-username" required placeholder="Digite o username"></div>
+<div class="auth-field"><label>🔒 Senha</label><input type="password" id="login-password" required placeholder="Digite a senha"></div>
+<button type="submit" class="auth-btn">ENTRAR</button>
+</form>
+<div class="auth-divider">ou</div>
+<div class="auth-switch">Não tem conta? <a onclick="showRegister()">Criar conta</a></div>
+<div class="auth-info">ℹ️ Primeiro usuário será Administrador.</div>
+</div>
+<div id="register-form" class="auth-hidden">
+<div class="auth-error" id="register-error"></div>
+<form class="auth-form" onsubmit="handleRegister(event)">
+<div class="auth-field"><label>👤 Nome Completo</label><input type="text" id="reg-nome" required placeholder="Nome e apelido"></div>
+<div class="auth-field"><label>📧 Email</label><input type="email" id="reg-email" required placeholder="email@exemplo.com"></div>
+<div class="auth-field"><label>👤 Username</label><input type="text" id="reg-username" required minlength="3"></div>
+<div class="auth-field"><label>🔒 Senha</label><input type="password" id="reg-password" required minlength="4"></div>
+<button type="submit" class="auth-btn">CRIAR CONTA</button>
+</form>
+<div class="auth-divider">ou</div>
+<div class="auth-switch">Já tem conta? <a onclick="showLogin()">Fazer login</a></div>
+</div>
+</div>
+</div>
+
+<!-- 5. BARRA INSTITUCIONAL & TOOLBAR -->
+<div class="gov-bar" id="main-app" style="display:none">
+<div style="font-weight:bold">SDPC-HCN — Hospital Central de Nampula</div>
+<div style="display:flex;align-items:center;gap:10px">
+<div class="user-badge"><span id="user-badge-name">—</span><span class="user-dept" id="user-badge-dept">DEPT</span><span class="user-role" id="user-badge-role">USER</span></div>
+</div>
+</div>
+
+<div class="toolbar" id="main-toolbar" style="display:none">
+<button class="home-btn" onclick="showPage('home')">🏠 Início</button>
+<button onclick="window.print()">🖨️ Imprimir</button>
+<button class="save-btn" onclick="savePatient()">💾 Guardar</button>
+<button class="search-btn" onclick="openSearchModal()">🔍 Pesquisar</button>
+<button class="report-btn admin-only" onclick="openReportModal()">📊 Relatório</button>
+<button class="secondary" onclick="newPatient()">🆕 Novo Doente</button>
+<button class="users-btn admin-only" onclick="openUsersModal()">👥 Utilizadores</button>
+<button class="logout-btn" onclick="handleLogout()">🚪 Sair</button>
+<button onclick="showPage('internamento')">F1</button>
+<button onclick="showPage('historia')">F2</button>
+<button onclick="showPage('exame')">F3</button>
+<button onclick="showPage('saida')">F4</button>
+<button onclick="showPage('diario')">F5</button>
+<button onclick="showPage('enfermagem')">F6</button>
+<button class="sra-btn" onclick="showPage('diario_sra')">F7-SRA</button>
+<button class="sra-btn" onclick="showPage('monitor_sra')">F8-SRA</button>
+</div>
+
+<!-- 6. NAVEGAÇÃO POR ABAS -->
+<div class="tabs" id="main-tabs" style="display:none">
+<button id="tab-home" class="active" onclick="showPage('home')">🏠 Início</button>
+<button id="tab-internamento" onclick="showPage('internamento')">F1. Internamento</button>
+<button id="tab-historia" onclick="showPage('historia')">F2. História</button>
+<button id="tab-exame" onclick="showPage('exame')">F3. Exame Físico</button>
+<button id="tab-saida" onclick="showPage('saida')">F4. Saída</button>
+<button id="tab-diario" onclick="showPage('diario')">F5. Diário Clínico</button>
+<button id="tab-enfermagem" onclick="showPage('enfermagem')">F6. Diário Enf.</button>
+<button id="tab-diario_sra" onclick="showPage('diario_sra')" style="background:var(--sra-orange)">F7. Diário SRA</button>
+<button id="tab-monitor_sra" onclick="showPage('monitor_sra')" style="background:var(--sra-orange)">F8. Monitor SRA</button>
+</div>
+
+<!-- PAINEL PRINCIPAL (DASHBOARD) -->
+<section id="home" class="page">
+<div class="dash-hero">
+<h2 style="font-size:22px;margin-bottom:4px">SDPC-HCN · Hospital Central de Nampula</h2>
+<p style="font-size:12px;opacity:0.9">Sistema Digital do Processo Clínico — SNS República de Moçambique</p>
+</div>
+<div class="dash-stats">
+<div class="dash-stat"><div class="stat-num" id="stat-total">0</div><div class="stat-label">Doentes Registados</div></div>
+<div class="dash-stat"><div class="stat-num" id="stat-forms">8/8</div><div class="stat-label">Formulários Clínicos</div></div>
+</div>
+<div class="dash-quick-actions">
+<div class="dash-action-btn" onclick="newPatient()">🆕 Novo Doente</div>
+<div class="dash-action-btn" onclick="openSearchModal()">🔍 Pesquisar</div>
+<div class="dash-action-btn" onclick="savePatient()">💾 Guardar Dados</div>
+<div class="dash-action-btn admin-only" onclick="openReportModal()">📊 Relatório TOC</div>
+</div>
+<div style="font-weight:bold;margin:15px 0 8px;font-size:14px">📑 Todos os Formulários Clínicos (F1 ao F8):</div>
+<div class="dash-forms-grid">
+<div class="dash-form-card" onclick="showPage('internamento')"><h4>📋 F1. Processo de Internamento</h4><p>Admissão, identificação e serviço</p></div>
+<div class="dash-form-card" onclick="showPage('historia')"><h4>📖 F2. História Clínica</h4><p>Anamnese e revisão por sistemas</p></div>
+<div class="dash-form-card" onclick="showPage('exame')"><h4>🩺 F3. Exame Físico</h4><p>Constantes vitais e avaliação geral</p></div>
+<div class="dash-form-card" onclick="showPage('saida')"><h4>🚪 F4. Registo Clínico de Saída</h4><p>Alta hospitalar, óbito e estatística</p></div>
+<div class="dash-form-card" onclick="showPage('diario')"><h4>📝 F5. Diário Clínico</h4><p>Evolução, tratamentos e Rx/TAC</p></div>
+<div class="dash-form-card" onclick="showPage('enfermagem')"><h4>💉 F6. Diário de Enfermagem</h4><p>Medicação e cuidados de enfermagem</p></div>
+<div class="dash-form-card" onclick="showPage('diario_sra')" style="border-left:4px solid var(--sra-orange)"><h4>🚑 F7. Diário Sala de Reanimação</h4><p>Glasgow, parâmetros intensivos e conduta</p></div>
+<div class="dash-form-card" onclick="showPage('monitor_sra')" style="border-left:4px solid var(--sra-orange)"><h4>📈 F8. Folha de Monitorização SRA</h4><p>Curvas vitais 24h e balanço hídrico</p></div>
+</div>
+</section>
+
+<!-- FORMULÁRIOS F1 A F8 -->
+<form id="form">
+
+<!-- F1: INTERNAMENTO GERAL -->
+<section id="internamento" class="page">
+<div class="header"><h1>REPÚBLICA DE MOÇAMBIQUE · MINISTÉRIO DA SAÚDE</h1><h3 style="color:var(--green)">HOSPITAL CENTRAL DE NAMPULA</h3><h2>F1. PROCESSO DE INTERNAMENTO GERAL</h2></div>
+<div class="grid g3"><label class="field">N.º de Registo<input name="numero_registo" class="sync-registo"></label><label class="field">U. Sanitária<input name="unidade_sanitaria" value="Hospital Central de Nampula"></label><label class="field">NID/HDD<input name="nid_hdd" class="sync-nid"></label></div>
+<div class="section"><div class="section-title">Identificação do Doente</div>
+<div class="grid g2"><label class="field">Nome<input name="nome"></label><label class="field">Apelido<input name="apelido"></label></div>
+<div class="grid g3"><label class="field">Sexo<select name="sexo"><option></option><option>Masculino</option><option>Feminino</option></select></label><label class="field">Data de Nascimento<input type="date" id="dn" name="data_nascimento"></label><label class="field">Idade<input id="idade" name="idade"></label></div>
+<div class="grid g3"><label class="field">Serviço<input name="servico"></label><label class="field">Cama<input name="cama"></label><label class="field">Dia de Entrada<input type="date" name="dia_entrada" id="dia_entrada"></label></div>
+</div>
+<div class="section"><div class="section-title">Admissão Clínica</div>
+<label class="field">Motivo / Diagnóstico Provisório<textarea name="motivo_internamento"></textarea></label>
+<label class="field">Tratamento a Prestar<textarea name="tratamento_prestar"></textarea></label>
+</div>
+</section>
+
+<!-- F2: HISTÓRIA CLÍNICA -->
+<section id="historia" class="page">
+<div class="header"><h1>HOSPITAL CENTRAL DE NAMPULA</h1><h2>F2. HISTÓRIA CLÍNICA (ANAMNESE)</h2><div class="grid g2"><label class="field">N.º de Registo<input name="hc_registo" class="sync-registo"></label><label class="field">Data<input type="date" name="hc_data"></label></div></div>
+<div class="section"><div class="section-title">1. Queixas Principais & História da Doença Atual</div>
+<div class="qbox"><strong>Queixas Principais</strong><div class="line">1.<input name="qp1"></div><div class="line">2.<input name="qp2"></div></div>
+<div class="qbox"><strong>História da Doença Atual (HDA)</strong><textarea name="hda" style="min-height:80px"></textarea></div>
+</div>
+<div class="section"><div class="section-title">2. Antecedentes Pessoais e Familiares</div>
+<div class="checkgrid">
+<label class="check"><input type="checkbox" name="pregressa" value="HTA"> HTA</label><label class="check"><input type="checkbox" name="pregressa" value="DM"> Diabetes</label>
+<label class="check"><input type="checkbox" name="pregressa" value="Asma"> Asma</label><label class="check"><input type="checkbox" name="pregressa" value="TB"> Tuberculose</label>
+<label class="check"><input type="checkbox" name="pregressa" value="Alergias"> Alergias</label><label class="check"><input type="checkbox" name="pregressa" value="Transfusões"> Transfusões</label>
+</div>
+<label class="field" style="margin-top:6px">Observações antecedentes<textarea name="pregressa_especifique"></textarea></label>
+</div>
+<div class="section"><div class="section-title">3. Revisão por Sistemas (ROS)</div>
+<div class="grid g2"><div class="system"><div class="system-head">Cardiovascular</div><textarea name="ros_cardio"></textarea></div><div class="system"><div class="system-head">Respiratório</div><textarea name="ros_pulmonar"></textarea></div><div class="system"><div class="system-head">Gastrointestinal</div><textarea name="ros_gi"></textarea></div><div class="system"><div class="system-head">Neurológico</div><textarea name="ros_neuro"></textarea></div></div>
+</div>
+</section>
+
+<!-- F3: EXAME FÍSICO -->
+<section id="exame" class="page">
+<div class="header"><h1>HOSPITAL CENTRAL DE NAMPULA</h1><h2>F3. EXAME FÍSICO</h2></div>
+<div class="section"><div class="section-title">Sinais Vitais & Estado Geral</div>
+<div class="grid g4">
+<label class="field">TA (mmHg)<input name="ta"></label><label class="field">FC (bpm)<input name="fc"></label><label class="field">FR (/min)<input name="fr"></label><label class="field">Temp (°C)<input name="temperatura"></label>
+<label class="field">SpO₂ (%)<input name="spo2"></label><label class="field">Glicemia<input name="glicemia"></label><label class="field">Peso (kg)<input name="peso"></label><label class="field">Glasgow<input name="glasgow"></label>
+</div>
+</div>
+<div class="section"><div class="section-title">Aparelhos & Sistemas</div>
+<label class="field">Cabeça e Pescoço<textarea name="ex_cabeca"></textarea></label>
+<label class="field">Tórax e Auscultação Cardiopulmonar<textarea name="ausc_pulmonar"></textarea></label>
+<label class="field">Abdómen<textarea name="abd_outros"></textarea></label>
+<label class="field">Membros e Neurológico<textarea name="neuro_outros"></textarea></label>
+<label class="field">Hipóteses de Diagnóstico<textarea name="hipoteses_diagnostico" style="min-height:70px"></textarea></label>
+</div>
+</section>
+
+<!-- F4: REGISTO DE SAÍDA -->
+<section id="saida" class="page">
+<div class="header"><h1>HOSPITAL CENTRAL DE NAMPULA</h1><h2>F4. REGISTO CLÍNICO DE SAÍDA (ALTA / ÓBITO)</h2></div>
+<div class="section"><div class="section-title">Tipo de Alta & Resultado</div>
+<div class="checkgrid">
+<label class="check"><input type="radio" name="tipo_alta" value="Curado"> 1. Curado</label><label class="check"><input type="radio" name="tipo_alta" value="Melhorado"> 2. Melhorado</label>
+<label class="check"><input type="radio" name="tipo_alta" value="Transferencia"> 3. Transferência</label><label class="check"><input type="radio" name="tipo_alta" value="Falecimento"> 4. Falecimento</label>
+</div>
+<div class="grid g3" style="margin-top:8px"><label class="field">Data de Saída<input type="date" name="data_alta" id="saida_data_saida"></label><label class="field">Dias de Internamento<input name="dias_hospitalizacao" id="dias_hospitalizacao" readonly></label><label class="field">Médico<input name="assinatura_alta"></label></div>
+</div>
+<div class="section"><div class="section-title">Diagnósticos Finais</div>
+<table class="diag-table"><thead><tr><th>N.º</th><th>Diagnóstico</th><th>Código OMS/CID</th></tr></thead>
+<tbody><tr><td>1</td><td><input name="diag_principal"></td><td><input name="diag_principal_cod"></td></tr><tr><td>2</td><td><input name="diag_sec2"></td><td><input name="diag_sec2_cod"></td></tr></tbody></table>
+</div>
+<div class="obito-block"><div class="section-title">Registo de Óbito (se aplicável)</div>
+<div class="grid g3"><label class="field">Data/Hora Óbito<input type="datetime-local" name="obito_data_hora"></label><label class="field">Causa Básica<input name="obito_causa"></label><label class="field">Clínico Responsável<input name="obito_medico"></label></div>
+</div>
+</section>
+
+<!-- F5: DIÁRIO CLÍNICO -->
+<section id="diario" class="page">
+<div class="header"><h1>HOSPITAL CENTRAL DE NAMPULA</h1><h2>F5. DIÁRIO CLÍNICO</h2></div>
+<div class="grid g4"><label class="field">Data<input type="date" name="diario_data" id="diario_data"></label><label class="field">Turno<input name="diario_turno" placeholder="Manhã/Tarde/Noite"></label><label class="field">Médico<input name="diario_medico"></label><label class="field">Dia Intern.<input name="diario_dia_internamento"></label></div>
+<div class="section"><div class="section-title">Evolução & Terapêutica</div>
+<label class="field">Evolução Clínica<textarea name="evolucao_clinica" style="min-height:90px"></textarea></label>
+<label class="field">Prescrição e Tratamentos<textarea name="tratamentos_dia" style="min-height:80px"></textarea></label>
+<div class="ex-block"><div class="ex-block-title">Exames Complementares (Rx, TAC, Ecografia, Laboratório)</div>
+<textarea name="resultados_laboratorio" placeholder="Resultados de análises e exames..."></textarea>
+<div class="image-upload-container"><label>📷 Anexar imagens médicas (Rx / TAC):</label><input type="file" id="rx-upload" accept="image/*" multiple onchange="handleImageUpload(event, 'rx-preview')"><div class="image-preview" id="rx-preview"></div></div>
+</div>
+</div>
+</section>
+
+<!-- F6: DIÁRIO DE ENFERMAGEM -->
+<section id="enfermagem" class="page">
+<div class="header"><h1>HOSPITAL CENTRAL DE NAMPULA</h1><h2>F6. DIÁRIO DE ENFERMAGEM</h2></div>
+<div class="grid g3"><label class="field">Data<input type="date" name="enf_data" id="enf_data"></label><label class="field">Turno<input name="enf_turno"></label><label class="field">Enfermeiro(a)<input name="enf_enfermeira_resp"></label></div>
+<div class="section"><div class="section-title">Sinais Vitais & Evolução</div>
+<div class="grid g5"><label class="field">TA<input name="enf_ta"></label><label class="field">Temp<input name="enf_temperatura"></label><label class="field">FC<input name="enf_fc"></label><label class="field">FR<input name="enf_fr"></label><label class="field">SpO₂<input name="enf_spo2"></label></div>
+<label class="field" style="margin-top:6px">Cuidados Prestados e Medicação<textarea name="enf_medicacao" style="min-height:90px"></textarea></label>
+</div>
+</section>
+
+<!-- F7: DIÁRIO SRA -->
+<section id="diario_sra" class="page">
+<div class="header"><h2 style="color:var(--sra-orange)">F7. SALA DE REANIMAÇÃO (SRA) — DIÁRIO CLÍNICO</h2></div>
+<div class="grid g3"><label class="field">Nome do Doente<input name="sra_nome" class="sync-nome"></label><label class="field">Data/Hora<input type="datetime-local" name="sra_data_hora"></label><label class="field">Médico<input name="sra_medico"></label></div>
+<div class="sra-two-col" style="margin-top:10px">
+<div class="sra-field"><label>🩺 Clínica Hoje</label><textarea name="sra_clinica_hoje"></textarea>
+<label style="margin-top:6px">🧠 Escala de Coma de Glasgow</label>
+<div class="grid g3"><label class="field">AO (1-4)<input type="number" name="sra_glasgow_ao" min="1" max="4" oninput="calcGlasgow()"></label><label class="field">RV (1-5)<input type="number" name="sra_glasgow_rv" min="1" max="5" oninput="calcGlasgow()"></label><label class="field">RM (1-6)<input type="number" name="sra_glasgow_rm" min="1" max="6" oninput="calcGlasgow()"></label></div>
+<div style="font-weight:bold;margin-top:4px">Total Glasgow: <span id="sra_glasgow_total" style="color:var(--sra-orange)">—</span></div>
+</div>
+<div class="sra-field"><label>💊 Medicamentos & Procedimentos Invasivos</label><textarea name="sra_medicamentos" style="min-height:80px"></textarea>
+<label style="margin-top:6px">Terapêutica e Conduta</label><textarea name="sra_terapeutica" style="min-height:80px"></textarea>
+</div>
+</div>
+</section>
+
+<!-- F8: MONITOR SRA (CURVAS VITAIS & BALANÇO HÍDRICO) -->
+<section id="monitor_sra" class="page">
+<div class="header"><h2 style="color:var(--sra-orange)">F8. FOLHA DE MONITORIZAÇÃO SRA (24 HORAS)</h2></div>
+<div class="grid g4"><label class="field">Nome<input name="mon_nome" class="sync-nome"></label><label class="field">Cama<input name="mon_cama"></label><label class="field">Data<input type="date" name="mon_data" id="mon_data"></label><label class="field">Diagnóstico<input name="mon_diagnostico"></label></div>
+<div style="font-weight:bold;margin:12px 0 6px">📈 Curvas de Sinais Vitais (Clique na grelha para marcar os valores):</div>
+<div class="chart-container"><div class="chart-title">Tensão Arterial Sistólica (mmHg)</div><div class="chart-grid ta-grid" id="chart-ta"></div></div>
+<div class="chart-container"><div class="chart-title">Pulso (bpm)</div><div class="chart-grid pulso-grid" id="chart-pulso"></div></div>
+<div class="chart-container"><div class="chart-title">Temperatura (°C)</div><div class="chart-grid temp-grid" id="chart-temp"></div></div>
+<div style="text-align:right"><button type="button" onclick="clearAllCharts()" style="background:#c62828;padding:4px 8px;font-size:11px">Limpar Gráficos</button></div>
+<div style="font-weight:bold;margin:12px 0 6px">💧 Fluidoterapia — Balanço Hídrico 24h (Entradas vs. Saídas em ml):</div>
+<div class="fluid-grid" id="fluid-grid"></div>
+</section>
+
+</form>
+
+<!-- MODAIS: IMAGEM, PESQUISA, USUÁRIOS E RELATÓRIO -->
+<div id="imageModal" class="image-modal" onclick="closeModal()"><img id="modalImage" style="max-width:90%;max-height:90%;margin:auto;display:block;margin-top:40px"></div>
+
+<div id="searchModal" class="search-modal">
+<div class="search-modal-content">
+<div class="search-modal-header"><h3>🔍 Pesquisar Doente</h3><button onclick="closeSearchModal()" style="background:transparent;color:#fff;font-size:20px">&times;</button></div>
+<div class="search-modal-body">
+<input type="text" id="searchInput" placeholder="Pesquisar por nome ou registo..." oninput="renderPatientList()" style="width:100%;padding:8px;margin-bottom:10px;border:1px solid #999;border-radius:4px">
+<ul id="patientList" style="list-style:none;padding:0"></ul>
+</div>
+</div>
+</div>
+
+<div id="usersModal" class="users-modal">
+<div class="users-modal-content">
+<div class="users-modal-header"><h3>👥 Gestão de Utilizadores</h3><button onclick="closeUsersModal()" style="background:transparent;color:#fff;font-size:20px">&times;</button></div>
+<div class="users-modal-body">
+<div class="grid g4" style="margin-bottom:10px">
+<input type="text" id="new-user-nome" placeholder="Nome">
+<input type="text" id="new-user-username" placeholder="Username">
+<select id="new-user-dept"><option value="BS">BS</option><option value="CE">CE</option><option value="Med.I">Med.I</option><option value="SRA">SRA</option><option value="Cir">Cir</option></select>
+<button onclick="addUser()">Adicionar</button>
+</div>
+<table class="users-table"><thead><tr><th>Nome</th><th>Username</th><th>Departamento</th><th>Nível</th></tr></thead><tbody id="users-table-body"></tbody></table>
+</div>
+</div>
+</div>
+
+<div id="reportModal" class="report-modal">
+<div class="report-modal-content">
+<div class="report-modal-header"><h3>📊 Relatório Hospitalar & TOC</h3><button onclick="closeReportModal()" style="background:transparent;color:#fff;font-size:20px">&times;</button></div>
+<div class="report-modal-body">
+<div class="grid g3" style="margin-bottom:10px">
+<label class="field">Início<input type="date" id="rpt-date-start"></label>
+<label class="field">Fim<input type="date" id="rpt-date-end"></label>
+<label class="field">Camas Totais<input type="number" id="rpt-camas" value="200"></label>
+</div>
+<button onclick="generateReport()" style="margin-bottom:12px">Calcular Relatório & TOC</button>
+<div id="report-summary" style="padding:10px;background:#f5f5f5;border-radius:6px;font-size:13px;line-height:1.6"></div>
+</div>
+</div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<!-- LÓGICA JAVASCRIPT NATIVA -->
+<script>
+let currentUser=null,selectedDept=null,chartState={ta:{},pulso:{},temp:{}},fluidState={ent:{},sai:{}};
+const USERS_KEY='sdpc_hcn_users',SESSION_KEY='sdpc_hcn_session',PATIENTS_KEY='sdpc_hcn_patients';
+
+function openPublicAppointment(){document.getElementById('portal-screen').classList.add('hidden');document.getElementById('public-appointment').classList.add('active')}
+function backToPortal(){document.getElementById('public-appointment').classList.remove('active');document.getElementById('dept-screen').classList.remove('active');document.getElementById('auth-screen').classList.remove('active');document.getElementById('portal-screen').classList.remove('hidden')}
+function submitAppointment(e){e.preventDefault();const n=document.getElementById('apt-nome').value;const num='APT-'+Date.now().toString().slice(-6);document.getElementById('appointment-form-container').style.display='none';document.getElementById('appointment-success').classList.add('show');document.getElementById('appointment-number').textContent=n+' · Código: '+num;showToast('Marcação realizada com sucesso!')}
+function openDeptSelection(){document.getElementById('portal-screen').classList.add('hidden');document.getElementById('dept-screen').classList.add('active')}
+function selectDept(c,n){selectedDept={code:c,name:n};document.getElementById('dept-screen').classList.remove('active');document.getElementById('auth-screen').classList.add('active');document.getElementById('auth-dept-display').textContent=c+' - '+n;showLogin()}
+function backToDept(){document.getElementById('auth-screen').classList.remove('active');document.getElementById('dept-screen').classList.add('active')}
+function showLogin(){document.getElementById('login-form').classList.remove('auth-hidden');document.getElementById('register-form').classList.add('auth-hidden')}
+function showRegister(){document.getElementById('register-form').classList.remove('auth-hidden');document.getElementById('login-form').classList.add('auth-hidden')}
+
+function getUsers(){try{return JSON.parse(localStorage.getItem(USERS_KEY))||[]}catch(e){return[]}}
+function saveUsers(u){localStorage.setItem(USERS_KEY,JSON.stringify(u))}
+
+function handleLogin(e){e.preventDefault();const u=document.getElementById('login-username').value.trim();const users=getUsers(),user=users.find(x=>x.username.toLowerCase()===u.toLowerCase());currentUser={nome:user?user.nome:u,username:u,dept:selectedDept?selectedDept.code:'BS',role:user?user.role:'admin'};enterApp();showToast('Bem-vindo, '+currentUser.nome)}
+function handleRegister(e){e.preventDefault();const n=document.getElementById('reg-nome').value.trim(),u=document.getElementById('reg-username').value.trim();const users=getUsers(),isFirst=users.length===0;const nu={nome:n,username:u,dept:selectedDept?selectedDept.code:'BS',role:isFirst?'admin':'user'};users.push(nu);saveUsers(users);currentUser=nu;enterApp();showToast('Conta criada com sucesso!')}
+function handleLogout(){currentUser=null;document.getElementById('main-app').style.display='none';document.getElementById('main-toolbar').style.display='none';document.getElementById('main-tabs').style.display='none';backToPortal()}
+
+function enterApp(){document.getElementById('auth-screen').classList.remove('active');document.getElementById('main-app').style.display='flex';document.getElementById('main-toolbar').style.display='flex';document.getElementById('main-tabs').style.display='flex';document.getElementById('user-badge-name').textContent=currentUser.nome;document.getElementById('user-badge-dept').textContent=currentUser.dept;document.getElementById('user-badge-role').textContent=currentUser.role.toUpperCase();showPage('home')}
+
+function showPage(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active','printable'));const p=document.getElementById(id);if(p)p.classList.add('active','printable');document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));const tab=document.getElementById('tab-'+id);if(tab)tab.classList.add('active');window.scrollTo({top:0,behavior:'smooth'});if(id==='monitor_sra'){setTimeout(initCharts,100);setTimeout(initFluidGrid,100)}}
+
+function calcGlasgow(){const ao=parseInt(document.querySelector('[name="sra_glasgow_ao"]')?.value)||0,rv=parseInt(document.querySelector('[name="sra_glasgow_rv"]')?.value)||0,rm=parseInt(document.querySelector('[name="sra_glasgow_rm"]')?.value)||0;const t=ao+rv+rm;const el=document.getElementById('sra_glasgow_total');if(el)el.textContent=t>0?t+' / 15':'—'}
+
+function savePatient(){const n=document.querySelector('[name="nome"]')?.value||document.querySelector('[name="sra_nome"]')?.value;if(!n){showToast('Preencha o Nome do Doente','error');return}const pts=JSON.parse(localStorage.getItem(PATIENTS_KEY)||'[]');pts.push({id:'p_'+Date.now(),nome:n,registo:document.querySelector('[name="numero_registo"]')?.value||'',servico:document.querySelector('[name="servico"]')?.value||'Geral',date:new Date().toISOString()});localStorage.setItem(PATIENTS_KEY,JSON.stringify(pts));document.getElementById('stat-total').textContent=pts.length;showToast('Dados do Doente guardados com sucesso!')}
+function newPatient(){document.getElementById('form').reset();showToast('Pronto para novo registo');showPage('internamento')}
+
+function openSearchModal(){document.getElementById('searchModal').style.display='block';renderPatientList()}
+function closeSearchModal(){document.getElementById('searchModal').style.display='none'}
+function renderPatientList(){const q=(document.getElementById('searchInput').value||'').toLowerCase();const pts=JSON.parse(localStorage.getItem(PATIENTS_KEY)||'[]');const list=document.getElementById('patientList');const f=pts.filter(p=>p.nome.toLowerCase().includes(q)||(p.registo&&p.registo.toLowerCase().includes(q)));list.innerHTML=f.map(p=>`<li style="padding:8px;border-bottom:1px solid #ddd;cursor:pointer" onclick="loadPatient('${p.nome}')"><strong>${p.nome}</strong> (${p.registo||'Sem Reg.'})</li>`).join('')||'<li style="color:#888;padding:8px">Nenhum doente encontrado.</li>'}
+function loadPatient(nome){document.querySelector('[name="nome"]').value=nome;document.querySelectorAll('.sync-nome').forEach(el=>el.value=nome);closeSearchModal();showToast('Doente carregado: '+nome);showPage('internamento')}
+
+function openUsersModal(){document.getElementById('usersModal').style.display='block';renderUsers()}
+function closeUsersModal(){document.getElementById('usersModal').style.display='none'}
+function renderUsers(){const users=getUsers();document.getElementById('users-table-body').innerHTML=users.map(u=>`<tr><td>${u.nome}</td><td>${u.username}</td><td>${u.dept}</td><td>${u.role}</td></tr>`).join('')}
+function addUser(){const n=document.getElementById('new-user-nome').value,u=document.getElementById('new-user-username').value,d=document.getElementById('new-user-dept').value;if(!n||!u)return;const users=getUsers();users.push({nome:n,username:u,dept:d,role:'user'});saveUsers(users);renderUsers();showToast('Utilizador criado!')}
+
+function openReportModal(){document.getElementById('reportModal').style.display='block';generateReport()}
+function closeReportModal(){document.getElementById('reportModal').style.display='none'}
+function generateReport(){const pts=JSON.parse(localStorage.getItem(PATIENTS_KEY)||'[]');const tc=parseInt(document.getElementById('rpt-camas').value)||200;const tot=pts.length;const toc=((tot/tc)*100).toFixed(1);document.getElementById('report-summary').innerHTML=`<strong>Total de Doentes Registados:</strong> ${tot}<br><strong>Camas Disponíveis:</strong> ${tc}<br><strong>Taxa de Ocupação Estimada (TOC):</strong> <span style="font-size:16px;color:var(--green);font-weight:bold">${toc}%</span>`}
+
+function handleImageUpload(e,id){const files=e.target.files;const c=document.getElementById(id);Array.from(files).forEach(f=>{const r=new FileReader();r.onload=ev=>{const w=document.createElement('div');w.className='image-preview-item';w.innerHTML=`<img src="${ev.target.result}" onclick="openModal('${ev.target.result}')"><button class="remove-btn" onclick="this.parentElement.remove()">×</button>`;c.appendChild(w)};r.readAsDataURL(f)})}
+function openModal(s){document.getElementById('imageModal').style.display='block';document.getElementById('modalImage').src=s}
+function closeModal(){document.getElementById('imageModal').style.display='none'}
+
+function showToast(m,type=''){const t=document.getElementById('toast');t.textContent=m;t.className='toast show '+(type==='error'?'toast-error':'');setTimeout(()=>{t.className='toast'},3000)}
+
+const chartConfig={ta:{min:60,max:220,step:20,color:'ta'},pulso:{min:40,max:180,step:20,color:'pulso'},temp:{min:34,max:42,step:1,color:'temp'}};
+function initCharts(){Object.keys(chartConfig).forEach(type=>{const c=document.getElementById('chart-'+type);if(!c)return;c.innerHTML='';const cfg=chartConfig[type];for(let v=cfg.max;v>=cfg.min;v-=cfg.step){const yl=document.createElement('div');yl.className='chart-y-label';yl.textContent=v;c.appendChild(yl);for(let h=0;h<24;h++){const cell=document.createElement('div');cell.className='chart-cell';if(chartState[type][h]===v){cell.classList.add('marked-'+type);cell.innerHTML=`<div class="dot ${type}"></div>`}cell.onclick=function(){if(chartState[type][h]===v){delete chartState[type][h];cell.classList.remove('marked-'+type);cell.innerHTML=''}else{chartState[type][h]=v;initCharts()}};c.appendChild(cell)}}})}
+function clearAllCharts(){chartState={ta:{},pulso:{},temp:{}};initCharts();showToast('Gráficos limpos')}
+
+function initFluidGrid(){const c=document.getElementById('fluid-grid');if(!c)return;c.innerHTML='';const rows=['Entradas (ml)','Urina (ml)','Perdas (ml)','TOTAL Entradas','TOTAL Saídas','BALANÇO'];rows.forEach((r,ri)=>{const rl=document.createElement('div');rl.className='fluid-row-label';rl.textContent=r;c.appendChild(rl);for(let h=0;h<24;h++){const cell=document.createElement('div');cell.className='fluid-cell '+(ri>=3?'total-row':'');const inp=document.createElement('input');inp.type='number';inp.placeholder='—';cell.appendChild(inp);c.appendChild(cell)}})}
+
+document.querySelectorAll('.sync-registo').forEach(el=>el.addEventListener('input',e=>document.querySelectorAll('.sync-registo').forEach(o=>o.value=e.target.value)));
+document.querySelectorAll('.sync-nid').forEach(el=>el.addEventListener('input',e=>document.querySelectorAll('.sync-nid').forEach(o=>o.value=e.target.value)));
+</script>
+</body>
+</html>

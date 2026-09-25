@@ -1,0 +1,6 @@
+{
+  "name": "SDPC-HCN - Sistema Digital do Processo Clínico",
+  "description": "Sistema Digital do Processo Clínico do Hospital Central de Nampula com prontuário de internamento, monitorização de reanimação, relatórios estatísticos e guia de configuração local.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
